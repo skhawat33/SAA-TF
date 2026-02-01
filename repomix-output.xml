@@ -1,0 +1,222 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+code.md
+Ec2.tf
+install_httpd.sh
+Provider.tf
+sg.tf
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="code.md">
+Maine poore setup ko 4 alag files mein divide kar diya hai. In sab ko ek hi folder mein rakhein:
+
+1. provider.tf
+Is file mein AWS region aur provider ki details hoti hain.
+
+Terraform
+provider "aws" {
+  region = "us-east-1" # Aap apna region yahan likh sakte hain
+}
+2. sg.tf
+Is file mein sirf Security Group ke rules honge.
+
+Terraform
+resource "aws_security_group" "web_sg" {
+  name        = "web-server-sg"
+  description = "Allow HTTP and SSH traffic"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["116.90.105.4/32",] # Best practice: Replace with your IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+3. install_httpd.sh (User Data Script)
+Ye wo script hai jo EC2 launch hote hi Apache install karegi.
+
+Bash
+#!/bin/bash
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>Welcome to Cloud Folks Hub via Terraform Modular Code</h1>" > /var/www/html/index.html
+4. ec2.tf
+Ye main file hai jo instance banaye gi aur ooper wali files ko link karegi.
+
+Terraform
+resource "aws_instance" "web_server" {
+  ami           = "ami-051f8b213835a83bc" # Amazon Linux 2023 (Region check kar lein)
+  instance_type = "t3.micro"
+  
+  # Security Group ko link karna
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  # User Data script file ko link karna
+  user_data = file("install_httpd.sh")
+
+  tags = {
+    Name = "Terraform-Modular-Server"
+  }
+}
+🛡️ Technical Cheat Sheet (AWS Whitepaper & SAA-C03)
+Separation of Concerns: Alag files rakhne ka faida ye hai ke agar aapko sirf Security Group change karna ho, to aapko poora EC2 code chhairne ki zaroorat nahi parti.
+
+Implicit Dependency: Terraform itna smart hai ke usay pata hai pehle Security Group banana hai aur phir EC2, kyunke ec2.tf mein SG ki ID use ho rahi hai. [cite: 2026-01-31]
+
+State Management: Jab aap terraform apply karenge, to ye sari .tf files mil kar ek single terraform.tfstate file banayengi jo aapke infra ka record rakhegi.
+</file>
+
+<file path="Ec2.tf">
+resource "aws_instance" "Web_server" {
+  ami = "ami-051f8b213835a83bc"
+  instance_type = "t3.micro"
+  vpc_security_group_ids = [aws_security_group.webTFsg.id]
+  user_data = file("install_httpd.sh")
+  tags = {
+    name = "Terraform-modular-server"
+  }
+}
+</file>
+
+<file path="install_httpd.sh">
+Bash
+#!/bin/bash
+yum update -y
+yum install httpd -y
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>Welcome to Cloud Folks Hub via Terraform Modular Code</h1>" > /var/www/html/index.html
+</file>
+
+<file path="Provider.tf">
+provider "aws" {
+    region = "us-east-1"
+}
+</file>
+
+<file path="sg.tf">
+resource "aws_security_group" "webTFsg" {
+  name = "web-server-sg"
+  description = "aws security group created by TF"
+ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [ "116.90.105.4/32", "116.90.105.5/32" ]
+}
+ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+}
+egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [ "0.0.0.0/0" ]
+}
+}
+</file>
+
+<file path=".gitignore">
+# Local .terraform directories
+.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files, which are likely to contain sensitive data, such as
+# password, private keys, and other secrets. These should not be part of version 
+# control as they are data points which are potentially sensitive and subject 
+# to change depending on the environment.
+*.tfvars
+*.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore transient lock info files created by terraform apply
+.terraform.tfstate.lock.info
+
+# Include override files you do wish to add to version control using negated pattern
+# !example_override.tf
+
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+# example: *tfplan*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+</file>
+
+</files>
