@@ -41,15 +41,127 @@ The content is organized as follows:
 
 <directory_structure>
 .gitignore
+.terraform.lock.hcl
 code.md
 Ec2.tf
 install_httpd.sh
+outputs.tf
 Provider.tf
 sg.tf
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+# Local .terraform directories
+.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files, which are likely to contain sensitive data, such as
+# password, private keys, and other secrets. These should not be part of version 
+# control as they are data points which are potentially sensitive and subject 
+# to change depending on the environment.
+*.tfvars
+*.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore transient lock info files created by terraform apply
+.terraform.tfstate.lock.info
+
+# Include override files you do wish to add to version control using negated pattern
+# !example_override.tf
+
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+# example: *tfplan*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+</file>
+
+<file path=".terraform.lock.hcl">
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/hashicorp/aws" {
+  version = "6.30.0"
+  hashes = [
+    "h1:NHCJ8SQ71K+p5YKety3SY4PvZ0MfIv92c8blfVf4QP0=",
+    "zh:08fdcbb84b63739b758fd2f657303f495859ae15f2d6c3dbd642520cadb5f063",
+    "zh:1e69ff49906541cd511bdabcd4b2996a731b1642ba26b834cdac5432e8d5c557",
+    "zh:3aa23e3af1fb1dd0c025cb8fb73abdabd3f44b6a687a2a239947e7b0201b2f1f",
+    "zh:4b3b81e63eee913c874e8115d6a83d12bd9d7903446f91be15ba50c583c79549",
+    "zh:6e93a72d8770d73a4122dc82af33a020d58feeaca4e194a2685dce30dbcdce24",
+    "zh:74be722c9a64b95e06554cde0bef624084cc5a5ea7f3373f1975b7a4737d7074",
+    "zh:7d2acf6bc93be26504fd0e2965c77699a49549f74a767d0a81430d9e12d51358",
+    "zh:9b12af85486a96aedd8d7984b0ff811a4b42e3d88dad1a3fb4c0b580d04fa425",
+    "zh:aef629bc537b4cc0f64ece87bc2bfdb3e032a4d03a3f7f301f4c84ffdc2ac1ac",
+    "zh:b41dcc4a2c8e356d82d3f92629aab0e25849db106a43e7adf06d8c6bda7af4c9",
+    "zh:b4d7a9cf9ad5ac5dd07f4ea1e834b63f14e752f9aca9452cd99570fed16e0c12",
+    "zh:bcb20f64b9b4599fa746305bcff7eeee3da85029dc467f812f950cf45b519436",
+    "zh:e45a520b82a1d2d42360db1b93d8e96406a7548948ed528bac5018e1d731c5c6",
+    "zh:f743e4a0e10dc64669469e6a22e47012f07fb94587f5a1e8cf5431da4e878ae1",
+    "zh:fe1895af7dcc5815896f892b2593fe71b7f4f364b71d9487d6e8b10ef244c11c",
+  ]
+}
+</file>
+
+<file path="outputs.tf">
+output "y_Server_Ip" {
+  description = "The public ip of the web server"
+  value = aws_instance.Web_server.public_ip
+}
+
+output "My_website_url" {
+  description = "The url of the website"
+  value = "http://${aws_instance.Web_server.public_ip}"
+}
+</file>
+
+<file path="Provider.tf">
+provider "aws" {
+    region = "us-east-1"
+}
+</file>
+
+<file path="sg.tf">
+resource "aws_security_group" "webTFsg" {
+  name = "web-server-sg"
+  description = "aws security group created by TF"
+ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [ "116.90.105.4/32", "116.90.105.5/32" ]
+}
+ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+}
+egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [ "0.0.0.0/0" ]
+}
+}
+</file>
 
 <file path="code.md">
 Maine poore setup ko 4 alag files mein divide kar diya hai. In sab ko ek hi folder mein rakhein:
@@ -118,6 +230,18 @@ resource "aws_instance" "web_server" {
     Name = "Terraform-Modular-Server"
   }
 }
+5. outputs.tf
+# Instance ka Public IP dikhane ke liye
+output "web_server_public_ip" {
+  description = "The public IP address of the web server"
+  value       = aws_instance.Web_server.public_ip
+}
+
+# Direct browser URL dikhane ke liye
+output "website_url" {
+  description = "The URL of the website"
+  value       = "http://${aws_instance.Web_server.public_ip}"
+}
 🛡️ Technical Cheat Sheet (AWS Whitepaper & SAA-C03)
 Separation of Concerns: Alag files rakhne ka faida ye hai ke agar aapko sirf Security Group change karna ho, to aapko poora EC2 code chhairne ki zaroorat nahi parti.
 
@@ -128,8 +252,9 @@ State Management: Jab aap terraform apply karenge, to ye sari .tf files mil kar 
 
 <file path="Ec2.tf">
 resource "aws_instance" "Web_server" {
-  ami = "ami-051f8b213835a83bc"
+  ami = "ami-0532be01f26a3de55"
   instance_type = "t3.micro"
+  key_name = "MyLinuxKeyPair"
   vpc_security_group_ids = [aws_security_group.webTFsg.id]
   user_data = file("install_httpd.sh")
   tags = {
@@ -139,84 +264,12 @@ resource "aws_instance" "Web_server" {
 </file>
 
 <file path="install_httpd.sh">
-Bash
 #!/bin/bash
 yum update -y
 yum install httpd -y
 systemctl start httpd
 systemctl enable httpd
-echo "<h1>Welcome to Cloud Folks Hub via Terraform Modular Code</h1>" > /var/www/html/index.html
-</file>
-
-<file path="Provider.tf">
-provider "aws" {
-    region = "us-east-1"
-}
-</file>
-
-<file path="sg.tf">
-resource "aws_security_group" "webTFsg" {
-  name = "web-server-sg"
-  description = "aws security group created by TF"
-ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [ "116.90.105.4/32", "116.90.105.5/32" ]
-}
-ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
-}
-egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = [ "0.0.0.0/0" ]
-}
-}
-</file>
-
-<file path=".gitignore">
-# Local .terraform directories
-.terraform/
-
-# .tfstate files
-*.tfstate
-*.tfstate.*
-
-# Crash log files
-crash.log
-crash.*.log
-
-# Exclude all .tfvars files, which are likely to contain sensitive data, such as
-# password, private keys, and other secrets. These should not be part of version 
-# control as they are data points which are potentially sensitive and subject 
-# to change depending on the environment.
-*.tfvars
-*.tfvars.json
-
-# Ignore override files as they are usually used to override resources locally and so
-# are not checked in
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
-# Ignore transient lock info files created by terraform apply
-.terraform.tfstate.lock.info
-
-# Include override files you do wish to add to version control using negated pattern
-# !example_override.tf
-
-# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
-# example: *tfplan*
-
-# Ignore CLI configuration files
-.terraformrc
-terraform.rc
+echo "<h1>Welcome Skhawat Your st Server Deploy on AWS Cloud Via Terraform</h1>" > /var/www/html/index.html
 </file>
 
 </files>
