@@ -64,6 +64,18 @@ resource "aws_instance" "web_server" {
     Name = "Terraform-Modular-Server"
   }
 }
+5. outputs.tf
+# Instance ka Public IP dikhane ke liye
+output "web_server_public_ip" {
+  description = "The public IP address of the web server"
+  value       = aws_instance.Web_server.public_ip
+}
+
+# Direct browser URL dikhane ke liye
+output "website_url" {
+  description = "The URL of the website"
+  value       = "http://${aws_instance.Web_server.public_ip}"
+}
 🛡️ Technical Cheat Sheet (AWS Whitepaper & SAA-C03)
 Separation of Concerns: Alag files rakhne ka faida ye hai ke agar aapko sirf Security Group change karna ho, to aapko poora EC2 code chhairne ki zaroorat nahi parti.
 
